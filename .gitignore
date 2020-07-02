@@ -1,0 +1,6 @@
+.idea
+artifacts
+protoc-gen-go
+protoc-gen-gofullmethods
+debug
+storage/testdata/*
