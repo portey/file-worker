@@ -14,12 +14,22 @@ type Decorated interface {
 	GetFile(ctx context.Context, cb func(string, time.Time, io.ReadSeeker) error) error
 }
 
-type UniqueLineDecorator struct {
-	decorated Decorated
+type UniqueMatcher interface {
+	Exists(string) (bool, error)
+	Add(string) error
 }
 
-func New(decorated Decorated) *UniqueLineDecorator {
-	return &UniqueLineDecorator{decorated: decorated}
+type UniquerFactory interface {
+	NewMatcher() UniqueMatcher
+}
+
+type UniqueLineDecorator struct {
+	decorated      Decorated
+	uniquerFactory UniquerFactory
+}
+
+func New(decorated Decorated, uniquerFactory UniquerFactory) *UniqueLineDecorator {
+	return &UniqueLineDecorator{decorated: decorated, uniquerFactory: uniquerFactory}
 }
 
 func (u *UniqueLineDecorator) PutFile(ctx context.Context, content io.Reader) error {
@@ -29,11 +39,16 @@ func (u *UniqueLineDecorator) PutFile(ctx context.Context, content io.Reader) er
 	group.Go(func() error {
 		defer w.Close()
 
-		st := make(map[string]struct{})
+		uniquer := u.uniquerFactory.NewMatcher()
 		sc := bufio.NewScanner(content)
 		for sc.Scan() {
 			line := sc.Text()
-			if _, ok := st[line]; ok {
+
+			exists, err := uniquer.Exists(line)
+			if err != nil {
+				return err
+			}
+			if exists {
 				continue
 			}
 
@@ -44,7 +59,9 @@ func (u *UniqueLineDecorator) PutFile(ctx context.Context, content io.Reader) er
 				return err
 			}
 
-			st[line] = struct{}{}
+			if err := uniquer.Add(line); err != nil {
+				return err
+			}
 		}
 
 		return sc.Err()

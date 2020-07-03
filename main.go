@@ -32,7 +32,7 @@ func main() {
 
 func run(ctx context.Context, cfg config.Config) error {
 	store := storage.New(cfg.StorageBasePath)
-	uniqueDecorator := decorator.New(store)
+	uniqueDecorator := decorator.New(store, decorator.NewMemoryUniquerFactory())
 
 	apiSrv := api.CreateAndRun(cfg.APIPort, uniqueDecorator)
 	defer closeWithTimeout(apiSrv.Close, 5*time.Second)

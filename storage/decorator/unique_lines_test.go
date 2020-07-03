@@ -32,7 +32,7 @@ word2
 			return nil
 		})
 
-	decorator := New(decorated)
+	decorator := New(decorated, NewMemoryUniquerFactory())
 	ctx := context.Background()
 
 	content := strings.NewReader(`
@@ -58,7 +58,7 @@ func Test_DecoratedGet(t *testing.T) {
 		GetFile(gomock.Any(), gomock.Eq(f)).
 		Return(nil)
 
-	decorator := New(decorated)
+	decorator := New(decorated, NewMemoryUniquerFactory())
 	ctx := context.Background()
 
 	err := decorator.GetFile(ctx, f)
